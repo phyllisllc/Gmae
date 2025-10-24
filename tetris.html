@@ -502,6 +502,7 @@
                 left: 0;
                 top: 0;
                 box-sizing: border-box;
+                touch-action: manipulation;
             }
             
             .game-container {
@@ -513,6 +514,8 @@
                 padding: 0;
                 box-sizing: border-box;
                 position: relative;
+                display: flex;
+                flex-direction: column;
             }
             
             .game-header {
@@ -521,6 +524,7 @@
                 flex-direction: column;
                 gap: 8px;
                 margin: 0;
+                flex-shrink: 0;
             }
             
             .header-buttons {
@@ -540,6 +544,8 @@
                 flex-direction: column;
                 align-items: center;
                 box-sizing: border-box;
+                flex: 1;
+                overflow: hidden;
             }
             
             .game-info-container {
@@ -547,6 +553,7 @@
                 align-items: center;
                 gap: 10px;
                 width: 100%;
+                flex-shrink: 0;
             }
             
             .game-info {
@@ -562,15 +569,18 @@
             /* 关键调整：根据微信浏览器特性，使用视窗宽度的固定比例来设置游戏板尺寸 */
             .game-board {
                 width: calc(100vw - 30px);
-                height: calc((100vw - 30px) * 1.8);
+                height: calc((100vw - 30px) * 1.7);
                 max-width: 300px;
-                max-height: 540px;
+                max-height: 510px;
                 margin: 0 auto;
+                position: relative;
+                flex-shrink: 0;
             }
             
             .game-controls {
                 width: 100%;
                 padding: 0;
+                flex-shrink: 0;
             }
             
             .control-buttons {
@@ -606,14 +616,20 @@
             }
         }
         
-        /* 针对不同设备比例的微调 */
-        @media (max-width: 480px) and (min-height: 700px) {
+        /* 针对不同设备比例的微调 - 优化微信显示 */
+        @media (max-width: 480px) and (min-height: 800px) {
+            .game-board {
+                height: calc((100vw - 30px) * 1.8);
+            }
+        }
+        
+        @media (max-width: 480px) and (min-height: 700px) and (max-height: 799px) {
             .game-board {
                 height: calc((100vw - 30px) * 1.7);
             }
         }
         
-        @media (max-width: 480px) and (max-height: 600px) {
+        @media (max-width: 480px) and (max-height: 699px) {
             .game-board {
                 height: calc((100vw - 30px) * 1.5);
             }
@@ -629,60 +645,44 @@
             }
             
             .control-btn {
+                padding: 16px 0;
+                font-size: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) and (max-height: 600px) {
+            .game-board {
+                height: calc((100vw - 30px) * 1.3);
+            }
+            
+            .game-content {
+                padding: 5px 10px;
+                gap: 5px;
+            }
+            
+            .control-btn {
                 padding: 14px 0;
                 font-size: 18px;
             }
         }
         
-        /* 微信小程序及移动设备优化 */
-        @media (max-width: 480px) {
-            .game-container {
-                width: 100vw;
-                height: 100vh;
-                border-radius: 0;
-                border: none;
-            }
-            
-            .game-header {
-                padding: 10px;
-                height: auto;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .header-buttons {
-                margin-top: 5px;
-                gap: 8px;
-            }
-            
+        /* 横屏模式优化 */
+        @media (max-width: 480px) and (orientation: landscape) {
             .game-content {
-                padding: 10px;
-                gap: 10px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
             }
             
             .game-board {
-                width: 260px;
-                height: 420px;
+                width: calc(50vw - 20px);
+                height: calc((50vw - 20px) * 2);
+                max-width: 200px;
+                max-height: 400px;
             }
             
-            .control-buttons {
-                gap: 6px;
-            }
-            
-            .control-btn {
-                padding: 16px;
-                font-size: 20px;
-            }
-            
-            .btn-drop {
-                font-size: 16px;
-                padding: 14px;
-            }
-            
-            .game-instructions {
-                bottom: 10px;
-                right: 10px;
-                font-size: 11px;
+            .game-info-container {
+                width: calc(50vw - 20px);
             }
         }
     </style>
@@ -1370,7 +1370,7 @@
             return /MicroMessenger\/([\d\.]+)/.test(navigator.userAgent);
         }
         
-        // 动态调整游戏尺寸以适应微信环境
+        // 动态调整游戏尺寸以适应微信环境 - 增强版
         function adjustGameSizeForWechat() {
             if (!isWechatEnvironment()) return;
             
@@ -1378,9 +1378,27 @@
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             
+            // 计算可用高度（减去状态栏、顶部按钮等预留空间）
+            const availableHeight = viewportHeight - 120; // 预留空间
+            
+            // 根据屏幕宽高比动态计算游戏板比例
+            let boardRatio = 1.5; // 默认比例
+            if (viewportHeight > viewportWidth * 2) {
+                // 大屏手机或全面屏
+                boardRatio = 1.8;
+            } else if (viewportHeight > viewportWidth * 1.7) {
+                // 普通手机竖屏
+                boardRatio = 1.7;
+            }
+            
             // 计算游戏板理想尺寸
             const boardWidth = viewportWidth - 30;
-            const boardHeight = boardWidth * 1.8;
+            let boardHeight = boardWidth * boardRatio;
+            
+            // 确保游戏板不会超出可用高度
+            if (boardHeight > availableHeight) {
+                boardHeight = availableHeight;
+            }
             
             // 调整游戏板尺寸
             const gameBoard = document.querySelector('.game-board');
@@ -1389,14 +1407,35 @@
                 gameBoard.style.height = `${boardHeight}px`;
             }
             
-            // 调整画布尺寸以匹配游戏板
-            const canvas = document.querySelector('canvas');
-            if (canvas && gameBoard) {
-                canvas.width = gameBoard.offsetWidth;
-                canvas.height = gameBoard.offsetHeight;
+            // 调整tetris画布尺寸以匹配游戏板
+            const tetrisCanvas = document.getElementById('tetris');
+            if (tetrisCanvas && gameBoard) {
+                tetrisCanvas.width = gameBoard.offsetWidth;
+                tetrisCanvas.height = gameBoard.offsetHeight;
+                
+                // 重新计算方块大小
+                BLOCK_SIZE = Math.floor(gameBoard.offsetWidth / COLS);
             }
             
-            console.log('微信环境下动态调整游戏尺寸:', boardWidth, 'x', boardHeight);
+            // 调整nextPiece画布尺寸
+            const nextCanvas = document.getElementById('nextPiece');
+            if (nextCanvas) {
+                // 根据游戏板宽度比例调整预览区域
+                const nextCanvasWidth = Math.min(boardWidth * 0.8, 160);
+                const nextCanvasHeight = Math.min(boardWidth * 0.4, 100);
+                nextCanvas.width = nextCanvasWidth;
+                nextCanvas.height = nextCanvasHeight;
+            }
+            
+            // 重绘游戏
+            if (typeof drawBoard === 'function') {
+                drawBoard();
+            }
+            if (typeof drawNextPiece === 'function') {
+                drawNextPiece();
+            }
+            
+            console.log('微信环境下动态调整游戏尺寸:', boardWidth, 'x', boardHeight, '比例:', boardRatio);
         }
         
         // 确保DOM加载完成后再初始化游戏
@@ -1406,42 +1445,99 @@
             // 微信环境下的特殊处理
             if (isWechatEnvironment()) {
                 console.log('在微信环境中运行，启用微信适配模式');
-                // 隐藏一些在微信中不需要的元素
+                
+                // 禁用微信默认的下拉刷新和长按菜单
+                document.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+                
+                // 修改操作提示
                 const instructions = document.querySelector('.game-instructions');
                 if (instructions) {
                     instructions.textContent = '滑动控制方块，点击游戏区域旋转，点击按钮操作';
+                    instructions.style.fontSize = '11px';
+                    instructions.style.padding = '4px 8px';
                 }
                 
-                // 动态调整游戏尺寸
+                // 先调整游戏尺寸，再初始化游戏
                 adjustGameSizeForWechat();
             }
             
             try {
-                // 延迟初始化，确保微信环境完全加载
-                setTimeout(() => {
-                    initGame();
-                    
-                    // 初始化后再次调整尺寸，确保画布正确渲染
-                    if (isWechatEnvironment()) {
-                        setTimeout(adjustGameSizeForWechat, 50);
-                    }
-                    
-                    console.log('游戏初始化成功');
-                }, 100);
+                // 初始化游戏
+                initGame();
+                
+                // 初始化后再次调整尺寸，确保画布正确渲染
+                if (isWechatEnvironment()) {
+                    setTimeout(adjustGameSizeForWechat, 100);
+                }
+                
+                console.log('游戏初始化成功');
             } catch (error) {
                 console.error('游戏初始化失败:', error);
                 // 显示错误提示
                 const gameBoard = document.querySelector('.game-board');
                 if (gameBoard) {
-                    gameBoard.innerHTML = '<div style="text-align: center; padding: 20px;">游戏加载失败，请刷新重试</div>';
+                    gameBoard.innerHTML = '<div style="text-align: center; padding: 20px; font-size: 14px;">游戏加载失败，请刷新重试</div>';
                 }
             }
         });
         
-        // 监听视窗大小变化，实时调整游戏尺寸
+        // 初始化时设置正确的触摸行为
+        document.addEventListener('touchstart', function(e) {
+            if (isWechatEnvironment()) {
+                // 允许在游戏板上的触摸操作
+                const target = e.target;
+                if (target.closest('.game-board') || target.closest('.control-btn') || target.closest('.btn')) {
+                    return;
+                }
+                // 其他区域阻止默认行为，防止微信的默认操作
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // 优化微信环境下的滑动体验
+        let touchMoving = false;
+        document.addEventListener('touchmove', function(e) {
+            if (isWechatEnvironment() && !touchMoving) {
+                touchMoving = true;
+                // 允许在游戏板上的滑动操作
+                const target = e.target;
+                if (target.closest('.game-board')) {
+                    e.preventDefault();
+                }
+                setTimeout(() => {
+                    touchMoving = false;
+                }, 50);
+            }
+        }, { passive: false });
+        
+        // 监听视窗大小变化和方向变化，实时调整游戏尺寸
         window.addEventListener('resize', function() {
             if (isWechatEnvironment()) {
-                adjustGameSizeForWechat();
+                // 使用防抖避免频繁调整
+                clearTimeout(window.resizeTimer);
+                window.resizeTimer = setTimeout(() => {
+                    adjustGameSizeForWechat();
+                }, 100);
+            }
+        });
+        
+        // 监听设备方向变化
+        window.addEventListener('orientationchange', function() {
+            if (isWechatEnvironment()) {
+                // 方向变化后延迟调整，确保视窗尺寸已更新
+                setTimeout(() => {
+                    adjustGameSizeForWechat();
+                }, 300);
+            }
+        });
+        
+        // 监听微信环境下可能的页面滚动
+        window.addEventListener('scroll', function() {
+            if (isWechatEnvironment()) {
+                // 防止页面滚动
+                window.scrollTo(0, 0);
             }
         });
         
