@@ -412,9 +412,21 @@
         /* 微信小程序及移动设备优化 */
         @media (max-width: 480px) {
             body {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+                box-sizing: border-box;
                 -webkit-text-size-adjust: 100%;
                 -webkit-overflow-scrolling: touch;
                 overflow-scrolling: touch;
+            }
+            
+            .container {
+                width: 100vw;
+                padding: 15px;
+                box-sizing: border-box;
             }
             
             .header {
@@ -423,23 +435,93 @@
             
             .page-title {
                 font-size: 22px;
+                margin-bottom: 20px;
+                padding-top: 10px;
+            }
+            
+            .games-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-top: 15px;
             }
             
             .game-card {
-                min-height: 350px;
+                min-height: auto;
+                height: 220px;
+                margin-bottom: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
             
             .game-preview {
-                height: 140px;
+                height: 100px;
             }
             
             .game-icon {
-                font-size: 60px;
+                font-size: 50px;
+            }
+            
+            .game-info {
+                padding: 12px;
+            }
+            
+            .game-title {
+                font-size: 16px;
+                margin-bottom: 6px;
+            }
+            
+            .game-description {
+                font-size: 12px;
+                margin-bottom: 10px;
+                line-height: 1.3;
+            }
+            
+            .tag {
+                font-size: 10px;
+                padding: 3px 6px;
+                margin-right: 6px;
+                margin-bottom: 6px;
             }
             
             .play-button {
-                padding: 14px 20px;
-                font-size: 16px;
+                padding: 10px 16px;
+                font-size: 14px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+        
+        /* 针对微信环境的额外优化 */
+        @media (max-width: 480px) and (max-height: 600px) {
+            .games-grid {
+                gap: 8px;
+            }
+            
+            .game-card {
+                height: 180px;
+            }
+            
+            .game-preview {
+                height: 80px;
+            }
+            
+            .game-icon {
+                font-size: 40px;
+            }
+            
+            .game-title {
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+            
+            .game-description {
+                font-size: 10px;
+                margin-bottom: 6px;
+            }
+            
+            .play-button {
+                padding: 8px 12px;
+                font-size: 12px;
             }
         }
         
@@ -612,27 +694,87 @@
         
         // 为卡片内的按钮添加点击事件，确保跳转到正确的游戏页面
         document.querySelectorAll('.play-button:not([disabled])').forEach(button => {
-            // 添加点击和触摸事件
-            button.addEventListener('click', handleButtonClick);
-            button.addEventListener('touchend', handleButtonClick);
-        });
-        
-        function handleButtonClick(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const gameLink = this.closest('.game-card').querySelector('.game-link');
-            if (gameLink) {
-                // 处理微信环境下的跳转
-                const href = gameLink.getAttribute('href');
-                if (href) {
-                    window.location.href = href;
+            // 触摸优化版本
+            function handleButtonClick() {
+                const gameLink = this.closest('.game-card').querySelector('.game-link');
+                if (gameLink) {
+                    // 处理微信环境下的跳转
+                    const href = gameLink.getAttribute('href');
+                    if (href) {
+                        window.location.href = href;
+                    }
                 }
             }
-        }
+            
+            // 添加点击事件
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleButtonClick.call(this);
+            });
+            
+            // 添加触摸事件优化
+            button.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                e.stopPropagation(); // 防止触发卡片的触摸事件
+                handleButtonClick.call(this);
+            });
+        });
         
         // 添加卡片点击跳转（当不点击按钮时）
         document.querySelectorAll('.game-card:not(:has(.play-button:not([disabled])))').forEach(card => {
             card.style.cursor = 'default';
+        });
+        
+        // 微信环境检测
+        function isWechatEnvironment() {
+            return /MicroMessenger\/([\d\.]+)/.test(navigator.userAgent);
+        }
+        
+        // 页面加载完成后检查微信环境
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isWechatEnvironment()) {
+                console.log('在微信环境中运行，启用微信适配模式');
+                
+                // 禁用双击缩放
+                document.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                });
+                
+                // 优化触摸滚动
+                document.body.style.touchAction = 'manipulation';
+                
+                // 适配微信内置浏览器的尺寸
+                const updateViewportDimensions = () => {
+                    const viewport = document.querySelector('meta[name=viewport]');
+                    if (viewport) {
+                        viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+                    }
+                };
+                
+                updateViewportDimensions();
+                window.addEventListener('resize', updateViewportDimensions);
+            }
+        });
+        
+        // 监听视窗大小变化，确保在微信中正确显示
+        window.addEventListener('resize', function() {
+            if (isWechatEnvironment()) {
+                console.log('微信环境下视窗大小变化，调整布局');
+                // 延迟执行以确保尺寸已更新
+                setTimeout(() => {
+                    // 重新应用动画以适应新尺寸
+                    const cards = document.querySelectorAll('.game-card');
+                    cards.forEach((card, index) => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.style.animationDelay = `${index * 0.1}s`;
+                            card.classList.add('animate-in');
+                        }, 50);
+                    });
+                }, 100);
+            }
         });
     </script>
 </body>

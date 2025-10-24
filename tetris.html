@@ -491,53 +491,146 @@
         
         /* 微信小程序及移动设备优化 */
         @media (max-width: 480px) {
+            body {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                display: block;
+                position: fixed;
+                left: 0;
+                top: 0;
+                box-sizing: border-box;
+            }
+            
             .game-container {
                 width: 100vw;
                 height: 100vh;
                 border-radius: 0;
                 border: none;
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                position: relative;
             }
             
             .game-header {
-                padding: 10px;
+                padding: 10px 15px;
                 height: auto;
                 flex-direction: column;
-                gap: 10px;
+                gap: 8px;
+                margin: 0;
             }
             
             .header-buttons {
-                margin-top: 5px;
-                gap: 8px;
-            }
-            
-            .game-content {
-                padding: 10px;
-                gap: 10px;
-            }
-            
-            .game-board {
-                width: 260px;
-                height: 420px;
-            }
-            
-            .control-buttons {
+                margin-top: 0;
                 gap: 6px;
             }
             
+            .btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .game-content {
+                padding: 5px 15px;
+                gap: 10px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                box-sizing: border-box;
+            }
+            
+            .game-info-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                width: 100%;
+            }
+            
+            .game-info {
+                width: 90%;
+                padding: 8px;
+                font-size: 12px;
+            }
+            
+            .info-item {
+                margin: 4px 0;
+            }
+            
+            /* 关键调整：根据微信浏览器特性，使用视窗宽度的固定比例来设置游戏板尺寸 */
+            .game-board {
+                width: calc(100vw - 30px);
+                height: calc((100vw - 30px) * 1.8);
+                max-width: 300px;
+                max-height: 540px;
+                margin: 0 auto;
+            }
+            
+            .game-controls {
+                width: 100%;
+                padding: 0;
+            }
+            
+            .control-buttons {
+                gap: 8px;
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
             .control-btn {
-                padding: 16px;
-                font-size: 20px;
+                padding: 18px 0;
+                font-size: 22px;
+                aspect-ratio: 1;
+                flex: 1;
+                min-width: 0;
             }
             
             .btn-drop {
-                font-size: 16px;
-                padding: 14px;
+                font-size: 14px;
+                padding: 12px;
+                margin-top: 10px;
             }
             
             .game-instructions {
-                bottom: 10px;
+                position: fixed;
+                bottom: 5px;
                 right: 10px;
+                font-size: 10px;
+                padding: 3px 6px;
+                background-color: rgba(5, 10, 20, 0.7);
+                backdrop-filter: blur(3px);
+                border-radius: 3px;
+            }
+        }
+        
+        /* 针对不同设备比例的微调 */
+        @media (max-width: 480px) and (min-height: 700px) {
+            .game-board {
+                height: calc((100vw - 30px) * 1.7);
+            }
+        }
+        
+        @media (max-width: 480px) and (max-height: 600px) {
+            .game-board {
+                height: calc((100vw - 30px) * 1.5);
+            }
+            
+            .game-header {
+                padding: 5px 10px;
+                gap: 5px;
+            }
+            
+            .btn {
+                padding: 4px 8px;
                 font-size: 11px;
+            }
+            
+            .control-btn {
+                padding: 14px 0;
+                font-size: 18px;
             }
         }
         
@@ -1277,6 +1370,35 @@
             return /MicroMessenger\/([\d\.]+)/.test(navigator.userAgent);
         }
         
+        // 动态调整游戏尺寸以适应微信环境
+        function adjustGameSizeForWechat() {
+            if (!isWechatEnvironment()) return;
+            
+            // 获取设备视窗尺寸
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // 计算游戏板理想尺寸
+            const boardWidth = viewportWidth - 30;
+            const boardHeight = boardWidth * 1.8;
+            
+            // 调整游戏板尺寸
+            const gameBoard = document.querySelector('.game-board');
+            if (gameBoard) {
+                gameBoard.style.width = `${boardWidth}px`;
+                gameBoard.style.height = `${boardHeight}px`;
+            }
+            
+            // 调整画布尺寸以匹配游戏板
+            const canvas = document.querySelector('canvas');
+            if (canvas && gameBoard) {
+                canvas.width = gameBoard.offsetWidth;
+                canvas.height = gameBoard.offsetHeight;
+            }
+            
+            console.log('微信环境下动态调整游戏尺寸:', boardWidth, 'x', boardHeight);
+        }
+        
         // 确保DOM加载完成后再初始化游戏
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM加载完成，开始初始化俄罗斯方块游戏');
@@ -1289,12 +1411,21 @@
                 if (instructions) {
                     instructions.textContent = '滑动控制方块，点击游戏区域旋转，点击按钮操作';
                 }
+                
+                // 动态调整游戏尺寸
+                adjustGameSizeForWechat();
             }
             
             try {
                 // 延迟初始化，确保微信环境完全加载
                 setTimeout(() => {
                     initGame();
+                    
+                    // 初始化后再次调整尺寸，确保画布正确渲染
+                    if (isWechatEnvironment()) {
+                        setTimeout(adjustGameSizeForWechat, 50);
+                    }
+                    
                     console.log('游戏初始化成功');
                 }, 100);
             } catch (error) {
@@ -1304,6 +1435,13 @@
                 if (gameBoard) {
                     gameBoard.innerHTML = '<div style="text-align: center; padding: 20px;">游戏加载失败，请刷新重试</div>';
                 }
+            }
+        });
+        
+        // 监听视窗大小变化，实时调整游戏尺寸
+        window.addEventListener('resize', function() {
+            if (isWechatEnvironment()) {
+                adjustGameSizeForWechat();
             }
         });
         
