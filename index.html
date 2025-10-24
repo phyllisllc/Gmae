@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Trae 游戏大厅</title>
+    <style>
+        /* 全局变量 */
+        :root {
+            --primary-color: #6366f1;
+            --primary-light: #818cf8;
+            --secondary-color: #10b981;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        /* 背景网格效果 - Trae风格 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+        
+        /* 主容器 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 顶部导航栏 - Trae风格 */
+        .header {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            background-color: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-secondary);
+        }
+        
+        .nav-link.active {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            padding: 40px 0;
+        }
+        
+        /* 页面标题 */
+        .page-header {
+            margin-bottom: 40px;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+        
+        .page-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            max-width: 600px;
+        }
+        
+        /* 游戏卡片网格 */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+        
+        /* 游戏卡片 - Trae风格 */
+        .game-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 350px;
+            box-shadow: 0 2px 8px var(--shadow-color);
+            touch-action: manipulation; /* 防止双击缩放 */
+            -webkit-tap-highlight-color: transparent; /* 移除iOS上的点击高亮 */
+        }
+        
+        .game-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--shadow-color);
+            border-color: var(--primary-light);
+        }
+        
+        /* 游戏预览区 */
+        .game-preview {
+            height: 160px;
+            background: linear-gradient(135deg, var(--primary-color), #4f46e5);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .game-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+        }
+        
+        /* 不同游戏的颜色区分 */
+        .game-card:nth-child(1) .game-preview {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+        
+        .game-card:nth-child(2) .game-preview {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+        }
+        
+        .game-card:nth-child(3) .game-preview {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        
+        .game-card:nth-child(4) .game-preview {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+        
+        .game-icon {
+            font-size: 72px;
+            color: rgba(255, 255, 255, 0.9);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+        
+        .game-card:hover .game-icon {
+            transform: scale(1.05) rotate(5deg);
+        }
+        
+        /* 游戏信息区域 */
+        .game-info {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .game-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 12px 0;
+            line-height: 1.3;
+        }
+        
+        .game-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+            flex-grow: 1;
+            margin-bottom: 16px;
+        }
+        
+        /* 开始游戏按钮 - Trae风格 */
+        .play-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .play-button:hover {
+            background-color: var(--primary-light);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .play-button:active {
+            transform: translateY(0);
+        }
+        
+        .play-button:disabled {
+            background-color: var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .play-button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* 游戏链接样式 */
+        .game-link {
+            display: block;
+            height: 100%;
+            text-decoration: none;
+        }
+        
+        /* 页脚样式 - Trae风格 */
+        .footer {
+            border-top: 1px solid var(--border-color);
+            padding: 24px 0;
+            margin-top: 48px;
+        }
+        
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .footer-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .footer-links {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+        }
+        
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s ease;
+        }
+        
+        .footer-link:hover {
+            color: var(--text-primary);
+        }
+        
+        /* 加载动画 - Trae风格 */
+        .loading-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeOut 0.8s ease 1s forwards;
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
+        }
+        
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 响应式设计 - Trae风格 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .main-content {
+                padding: 24px 0;
+            }
+            
+            .page-title {
+                font-size: 24px;
+            }
+            
+            .page-description {
+                font-size: 14px;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .game-card {
+                height: auto;
+                min-height: 380px;
+            }
+            
+            .nav-link {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            
+            .nav-right {
+                display: none;
+            }
+        }
+        
+        /* 微信小程序及移动设备优化 */
+        @media (max-width: 480px) {
+            body {
+                -webkit-text-size-adjust: 100%;
+                -webkit-overflow-scrolling: touch;
+                overflow-scrolling: touch;
+            }
+            
+            .header {
+                height: 56px;
+            }
+            
+            .page-title {
+                font-size: 22px;
+            }
+            
+            .game-card {
+                min-height: 350px;
+            }
+            
+            .game-preview {
+                height: 140px;
+            }
+            
+            .game-icon {
+                font-size: 60px;
+            }
+            
+            .play-button {
+                padding: 14px 20px;
+                font-size: 16px;
+            }
+        }
+        
+        /* 卡片动画 */
+        .animate-in {
+            animation: slideUp 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        @keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 代码块样式 - Trae风格 */
+        .code-block {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .tag {
+            display: inline-block;
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-light);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loading-animation">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <div class="container">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="logo-container">
+                <div class="logo">Trae 游戏大厅</div>
+            </div>
+            <nav class="nav-left">
+                <a href="#" class="nav-link active">首页</a>
+                <a href="#" class="nav-link">游戏</a>
+                <a href="#" class="nav-link">排行榜</a>
+                <a href="#" class="nav-link">关于</a>
+            </nav>
+            <div class="nav-right">
+                <a href="#" class="nav-link">登录</a>
+                <a href="#" class="nav-link">注册</a>
+            </div>
+        </header>
+        
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 页面标题 -->
+            <div class="page-header">
+                <h1 class="page-title">探索 Trae 游戏世界</h1>
+                <p class="page-description">由 AI 驱动的现代游戏体验，简洁、流畅、高效。在这里，你可以享受经典游戏的全新玩法。</p>
+            </div>
+            
+            <!-- 游戏卡片网格 -->
+            <div class="games-grid">
+                <!-- 俄罗斯方块游戏 -->
+                <div class="game-card animate-in">
+                    <a href="tetris.html" class="game-link">
+                        <div class="game-preview">
+                            <div class="game-icon">◼◻</div>
+                        </div>
+                        <div class="game-info">
+                            <h3 class="game-title">俄罗斯方块</h3>
+                            <div>
+                                <span class="tag">热门</span>
+                                <span class="tag">经典</span>
+                            </div>
+                            <p class="game-description">经典的俄罗斯方块游戏，具有 Trae 风格的现代界面。控制方块下落，填满整行以消除得分。</p>
+                            <button class="play-button">开始游戏</button>
+                        </div>
+                    </a>
+                </div>
+                
+                <!-- 待开发游戏 - 扫雷 -->
+                <div class="game-card animate-in">
+                    <div class="game-preview">
+                        <div class="game-icon">💣</div>
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">扫雷</h3>
+                        <div>
+                            <span class="tag">逻辑</span>
+                            <span class="tag">策略</span>
+                        </div>
+                        <p class="game-description">经典扫雷游戏，点击格子避开地雷，标记可疑位置，挑战你的逻辑思维能力。</p>
+                        <button class="play-button" disabled>开发中</button>
+                    </div>
+                </div>
+                
+                <!-- 待开发游戏 - 贪吃蛇 -->
+                <div class="game-card animate-in">
+                    <div class="game-preview">
+                        <div class="game-icon">🐍</div>
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">贪吃蛇</h3>
+                        <div>
+                            <span class="tag">休闲</span>
+                            <span class="tag">成长</span>
+                        </div>
+                        <p class="game-description">控制蛇吃食物，让它变得越来越长，但要小心不要撞到墙壁或自己的身体。</p>
+                        <button class="play-button" disabled>开发中</button>
+                    </div>
+                </div>
+                
+                <!-- 待开发游戏 - 打砖块 -->
+                <div class="game-card animate-in">
+                    <div class="game-preview">
+                        <div class="game-icon">🎯</div>
+                    </div>
+                    <div class="game-info">
+                        <h3 class="game-title">打砖块</h3>
+                        <div>
+                            <span class="tag">动作</span>
+                            <span class="tag">挑战</span>
+                        </div>
+                        <p class="game-description">用小球击碎所有砖块，控制挡板接住小球，挑战更高难度的关卡。</p>
+                        <button class="play-button" disabled>开发中</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 页脚 -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-text">© 2024 Trae 游戏大厅 | 由 AI 驱动</div>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">隐私政策</a>
+                    <a href="#" class="footer-link">使用条款</a>
+                    <a href="#" class="footer-link">联系我们</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        // 页面加载完成后的动画效果
+        window.addEventListener('load', function() {
+            // 为游戏卡片添加顺序出现的动画
+            const cards = document.querySelectorAll('.game-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.classList.add('animate-in');
+                }, 200);
+            });
+        });
+        
+        // 为卡片内的按钮添加点击事件，确保跳转到正确的游戏页面
+        document.querySelectorAll('.play-button:not([disabled])').forEach(button => {
+            // 添加点击和触摸事件
+            button.addEventListener('click', handleButtonClick);
+            button.addEventListener('touchend', handleButtonClick);
+        });
+        
+        function handleButtonClick(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const gameLink = this.closest('.game-card').querySelector('.game-link');
+            if (gameLink) {
+                // 处理微信环境下的跳转
+                const href = gameLink.getAttribute('href');
+                if (href) {
+                    window.location.href = href;
+                }
+            }
+        }
+        
+        // 添加卡片点击跳转（当不点击按钮时）
+        document.querySelectorAll('.game-card:not(:has(.play-button:not([disabled])))').forEach(card => {
+            card.style.cursor = 'default';
+        });
+    </script>
+</body>
+</html>
