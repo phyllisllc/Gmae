@@ -297,9 +297,9 @@
         
         /* 爆炸动画 */
         @keyframes explode {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); box-shadow: none; }
+            50% { transform: scale(1.15); box-shadow: 0 0 20px rgba(255, 68, 68, 1); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(255, 68, 68, 0.8); }
         }
         
         /* 旗子标记动画 */
@@ -344,11 +344,32 @@
         }
         
         .cell.mine-exploded {
-            background-color: var(--danger-color);
+            background-color: var(--danger-color) !important;
             color: white;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.8);
+            animation: explode 0.5s ease;
         }
         
+        /* 游戏结束时的地雷样式 */
         .cell.mine {
+            background-color: #ff6666 !important;
+            box-shadow: 0 0 5px rgba(255, 102, 102, 0.5);
+        }
+        
+        /* 正确标记的地雷 */
+        .cell.correct-flag {
+            border: 2px solid #00cc00 !important;
+        }
+        
+        /* 错误标记样式 */
+        .cell.flag-error {
+            background-color: #ffcccc !important;
+            box-shadow: 0 0 5px rgba(255, 204, 204, 0.5);
+        }
+        
+        /* 原始地雷样式保留 */
+        .cell.mine:not(.revealed) {
             background-color: var(--bg-primary);
         }
         
@@ -944,47 +965,8 @@
             
             // 点击地雷，游戏结束
             if (gameState.board[row][col] === 'M') {
-                // 先揭示所有地雷，让用户看到所有炸弹位置
-                gameState.mines.forEach(({ row: mineRow, col: mineCol }) => {
-                    revealCell(mineRow, mineCol);
-                });
-                
-                // 标记爆炸的地雷
-                if (cellElement) {
-                    cellElement.classList.add('mine-exploded');
-                    cellElement.style.backgroundColor = '#ff4444';
-                    cellElement.style.animation = 'explode 0.3s ease';
-                }
-                
-                // 显示错误标记
-                for (let r = 0; r < gameState.board.length; r++) {
-                    for (let c = 0; c < gameState.board[r].length; c++) {
-                        if (gameState.flagged[r][c] && gameState.board[r][c] !== 'M') {
-                            const flagCell = getCellElement(r, c);
-                            if (flagCell) {
-                                flagCell.classList.remove('flagged');
-                                flagCell.classList.add('revealed', 'flag-error');
-                                flagCell.textContent = '❌';
-                                flagCell.style.backgroundColor = '#ffcccc';
-                            }
-                        }
-                    }
-                }
-                
-                gameState.gameOver = true;
-                
-                // 停止计时器
-                if (gameState.timer) {
-                    clearInterval(gameState.timer);
-                }
-                
-                // 显示游戏结束覆盖层
-                setTimeout(() => {
-                    overlayTitle.textContent = '游戏结束！';
-                    overlayMessage.textContent = `很遗憾，你踩到了地雷！用时 ${gameState.time} 秒。现在你可以看到所有炸弹的位置了。`;
-                    gameOverlay.classList.add('show');
-                }, 500);
-                
+                // 调用gameOver函数处理游戏结束逻辑，显示所有地雷位置
+                gameOver(row, col);
                 return;
             }
             
@@ -1202,48 +1184,68 @@
                 clearInterval(gameState.timer);
             }
             
-            // 显示所有地雷
-            gameState.mines.forEach(({ row, col }) => {
-                const cellElement = getCellElement(row, col);
-                if (cellElement) {
-                    // 移除所有标记状态（包括问号）
-                    cellElement.classList.remove('flagged', 'question');
-                    cellElement.classList.add('revealed');
-                    cellElement.textContent = '💣';
-                    
-                    if (row === explodedRow && col === explodedCol) {
-                        cellElement.classList.add('mine-exploded');
-                        // 为爆炸的地雷添加额外的视觉效果
-                        cellElement.style.backgroundColor = '#ff4444';
-                        cellElement.style.animation = 'explode 0.3s ease';
-                    } else {
-                        cellElement.classList.add('mine');
-                        // 为普通地雷添加背景色
-                        cellElement.style.backgroundColor = '#ff6666';
-                    }
-                }
-            });
+            // 首先处理爆炸的地雷，立即显示
+            const explodedCell = getCellElement(explodedRow, explodedCol);
+            if (explodedCell) {
+                explodedCell.classList.remove('flagged', 'question');
+                explodedCell.classList.add('revealed', 'mine-exploded');
+                explodedCell.textContent = '💣';
+                explodedCell.style.backgroundColor = '#ff4444';
+                explodedCell.style.animation = 'explode 0.5s ease';
+                explodedCell.style.zIndex = '100'; // 确保爆炸的地雷在最上层
+            }
             
-            // 显示错误标记
-            for (let row = 0; row < gameState.board.length; row++) {
-                for (let col = 0; col < gameState.board[row].length; col++) {
-                    if (gameState.flagged[row][col] && gameState.board[row][col] !== 'M') {
-                        const cellElement = getCellElement(row, col);
-                        if (cellElement) {
-                            cellElement.classList.remove('flagged', 'question');
-                            cellElement.classList.add('revealed', 'flag-error');
-                            cellElement.textContent = '❌';
-                            // 为错误标记添加红色背景
-                            cellElement.style.backgroundColor = '#ffcccc';
+            // 延迟显示其他所有地雷和错误标记，让用户有时间看到爆炸效果
+            setTimeout(() => {
+                // 显示所有其他地雷
+                gameState.mines.forEach(({ row, col }) => {
+                    // 跳过已经处理的爆炸地雷
+                    if (row === explodedRow && col === explodedCol) return;
+                    
+                    const cellElement = getCellElement(row, col);
+                    if (cellElement) {
+                        // 移除所有标记状态（包括问号）
+                        cellElement.classList.remove('flagged', 'question');
+                        cellElement.classList.add('revealed', 'mine');
+                        cellElement.textContent = '💣';
+                        cellElement.style.backgroundColor = '#ff6666';
+                        cellElement.style.transition = 'all 0.3s ease';
+                    }
+                });
+                
+                // 显示错误标记
+                for (let row = 0; row < gameState.board.length; row++) {
+                    for (let col = 0; col < gameState.board[row].length; col++) {
+                        if (gameState.flagged[row][col] && gameState.board[row][col] !== 'M') {
+                            const cellElement = getCellElement(row, col);
+                            if (cellElement) {
+                                cellElement.classList.remove('flagged', 'question');
+                                cellElement.classList.add('revealed', 'flag-error');
+                                cellElement.textContent = '❌';
+                                cellElement.style.backgroundColor = '#ffcccc';
+                                cellElement.style.transition = 'all 0.3s ease';
+                            }
                         }
                     }
                 }
-            }
-            
-            // 显示游戏结束覆盖层
-            overlayTitle.textContent = '游戏结束！';
-            overlayMessage.textContent = `很遗憾，你踩到了地雷！用时 ${gameState.time} 秒。`;
-            gameOverlay.classList.add('show');
+                
+                // 显示正确标记的地雷（可选，为了更清晰）
+                gameState.mines.forEach(({ row, col }) => {
+                    const cellElement = getCellElement(row, col);
+                    if (cellElement && gameState.flagged[row][col]) {
+                        cellElement.classList.add('correct-flag');
+                        // 为正确标记的地雷添加绿色边框
+                        cellElement.style.border = '2px solid #00cc00';
+                    }
+                });
+                
+                // 延迟显示覆盖层，确保用户有足够时间看清所有结果
+                setTimeout(() => {
+                    overlayTitle.textContent = '游戏结束！';
+                    overlayMessage.textContent = `你踩到了地雷！用时 ${gameState.time} 秒。\n\n💣 红色炸弹：你踩到的地雷\n💣 橙色炸弹：其他隐藏的地雷\n❌ 红色格子：错误标记的位置\n\n现在你可以清楚地看到所有地雷的位置，点击下方按钮重新开始游戏。`;
+                    gameOverlay.classList.add('show');
+                }, 5000); // 延长至5秒，确保用户有充足时间看清结果
+            }, 300);
         }
         
         // 检查是否获胜
