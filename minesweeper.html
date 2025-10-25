@@ -277,7 +277,9 @@
         
         /* 游戏格子 */
         .cell {
-            aspect-ratio: 1;
+            aspect-ratio: auto; /* 移除固定的aspect-ratio，使用明确的width和height */
+            width: 30px;
+            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -290,6 +292,7 @@
             font-size: 14px;
             user-select: none;
             touch-action: manipulation;
+            box-sizing: border-box; /* 确保border不影响实际尺寸 */
         }
         
         /* 爆炸动画 */
@@ -297,6 +300,13 @@
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
             100% { transform: scale(1); }
+        }
+        
+        /* 旗子标记动画 */
+        @keyframes flagShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
         }
         
         /* 确保数字显示清晰 */
@@ -811,34 +821,38 @@
                     let touchStartX;
                     let touchStartY;
                     let touchMoved = false;
+                    let isLongPressDetected = false;
                     
                     cell.addEventListener('touchstart', (e) => {
                         // 防止默认行为，但不阻止滚动
                         e.preventDefault();
                         
+                        // 重置状态
+                        isLongPressDetected = false;
+                        touchMoved = false;
+                        
                         // 记录触摸开始时间和位置
                         touchStartTime = Date.now();
                         touchStartX = e.touches[0].clientX;
                         touchStartY = e.touches[0].clientY;
-                        touchMoved = false;
                         
                         // 添加视觉反馈
                         cell.style.transform = 'scale(0.95)';
                         
-                        // 设置长按计时器
+                        // 设置长按计时器，改为600ms更明显
                         longPressTimer = setTimeout(() => {
+                            isLongPressDetected = true;
                             handleCellLongPress(row, col);
-                        }, 500);
+                            // 为长按添加特殊视觉反馈
+                            cell.style.transform = 'scale(0.9)';
+                        }, 600);
                     });
                     
                     cell.addEventListener('touchend', (e) => {
                         clearTimeout(longPressTimer);
                         
-                        // 移除视觉反馈
-                        cell.style.transform = '';
-                        
-                        // 只有在没有移动太多的情况下才处理点击
-                        if (!touchMoved) {
+                        // 只有在没有移动太多且不是长按的情况下才处理点击
+                        if (!touchMoved && !isLongPressDetected) {
                             // 计算触摸持续时间
                             const touchDuration = Date.now() - touchStartTime;
                             
@@ -847,10 +861,18 @@
                                 handleCellClick(row, col);
                             }
                         }
+                        
+                        // 移除视觉反馈（延迟一点以确保动画效果）
+                        setTimeout(() => {
+                            cell.style.transform = '';
+                        }, 50);
                     });
                     
                     cell.addEventListener('touchmove', (e) => {
-                        clearTimeout(longPressTimer);
+                        // 只在长按未检测到时清除计时器
+                        if (!isLongPressDetected) {
+                            clearTimeout(longPressTimer);
+                        }
                         
                         // 计算移动距离
                         const touchCurrentX = e.touches[0].clientX;
@@ -863,18 +885,26 @@
                         // 如果移动距离超过阈值，标记为已移动
                         if (touchDistance > 10) {
                             touchMoved = true;
-                            cell.style.transform = '';
+                            // 只在长按未检测到时移除视觉反馈
+                            if (!isLongPressDetected) {
+                                cell.style.transform = '';
+                            }
                         }
                     });
                     
                     cell.addEventListener('touchcancel', () => {
                         clearTimeout(longPressTimer);
-                        cell.style.transform = '';
+                        isLongPressDetected = false;
+                        setTimeout(() => {
+                            cell.style.transform = '';
+                        }, 50);
                     });
                     
                     // 添加右键菜单事件（PC端标记地雷）
                     cell.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
+                        // 确保右键点击不会触发其他事件
+                        e.stopPropagation();
                         handleCellRightClick(row, col);
                     });
                     
@@ -967,6 +997,15 @@
                 gameState.firstClick = false;
             }
             
+            // 触发标记并添加视觉反馈
+            const cellElement = getCellElement(row, col);
+            if (cellElement) {
+                // 添加轻微的抖动动画表示标记操作
+                cellElement.style.animation = 'none';
+                cellElement.offsetHeight; // 触发重绘
+                cellElement.style.animation = 'flagShake 0.3s ease';
+            }
+            
             toggleFlag(row, col);
         }
         
@@ -979,6 +1018,15 @@
             if (gameState.firstClick) {
                 startGame(row, col, true);
                 gameState.firstClick = false;
+            }
+            
+            // 触发标记并添加视觉反馈
+            const cellElement = getCellElement(row, col);
+            if (cellElement) {
+                // 添加轻微的抖动动画表示标记操作
+                cellElement.style.animation = 'none';
+                cellElement.offsetHeight; // 触发重绘
+                cellElement.style.animation = 'flagShake 0.3s ease';
             }
             
             toggleFlag(row, col);
@@ -1250,21 +1298,35 @@
             const settings = DIFFICULTY_SETTINGS[gameState.difficulty];
             const { rows, cols } = settings;
             
-            // 计算可用宽度
-            const containerWidth = gameBoard.parentElement.clientWidth - 16; // 减去padding
-            const maxCellSize = containerWidth / cols;
+            // 获取游戏板容器的实际可用空间
+            const containerElement = gameBoard.parentElement;
+            const containerWidth = containerElement.clientWidth - 32; // 减去padding和margin
+            const containerHeight = containerElement.clientHeight - 32;
             
-            // 限制最大格子大小
-            const cellSize = Math.min(maxCellSize, 40); // 最大40px
+            // 考虑网格间距（gap为2px）
+            const gap = 2;
+            const gridPadding = 4;
+            
+            // 基于宽度和高度计算最大格子大小
+            const widthBasedSize = (containerWidth - 2 * gridPadding - (cols - 1) * gap) / cols;
+            const heightBasedSize = (containerHeight - 2 * gridPadding - (rows - 1) * gap) / rows;
+            
+            // 取较小值并限制最大大小
+            const cellSize = Math.floor(Math.min(widthBasedSize, heightBasedSize, 40)); // 最大40px
             gameState.cellSize = cellSize;
             
-            // 设置游戏板尺寸
-            gameBoard.style.width = `${cols * cellSize}px`;
-            gameBoard.style.height = `${rows * cellSize}px`;
+            // 重新计算并设置游戏板尺寸，确保包含所有格子和间距
+            gameBoard.style.width = `${2 * gridPadding + cols * cellSize + (cols - 1) * gap}px`;
+            gameBoard.style.height = `${2 * gridPadding + rows * cellSize + (rows - 1) * gap}px`;
+            
+            // 确保游戏板居中
+            gameBoard.style.margin = '0 auto';
             
             // 设置格子大小
             const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => {
+                // 移除aspect-ratio以避免尺寸冲突
+                cell.style.aspectRatio = 'auto';
                 cell.style.width = `${cellSize}px`;
                 cell.style.height = `${cellSize}px`;
                 cell.style.position = 'relative';
@@ -1302,7 +1364,7 @@
                 // 计算可用高度（减去标题栏和控制区域）
                 const headerHeight = document.querySelector('.header').offsetHeight;
                 const gameControlsHeight = document.querySelector('.game-controls').offsetHeight;
-                const instructionsHeight = document.querySelector('.instructions').offsetHeight;
+                const instructionsHeight = document.querySelector('.instructions')?.offsetHeight || 0;
                 
                 const availableHeight = viewportHeight - headerHeight - gameControlsHeight - instructionsHeight - 80; // 额外减去一些padding
                 
@@ -1310,15 +1372,26 @@
                 const settings = DIFFICULTY_SETTINGS[gameState.difficulty];
                 const { rows, cols } = settings;
                 
-                // 基于可用宽度和高度计算最佳格子大小
-                const widthBasedSize = (viewportWidth - 40) / cols; // 40px 为容器padding
-                const heightBasedSize = availableHeight / rows;
+                // 考虑网格间距
+                const gap = 2;
+                const gridPadding = 4;
                 
-                const optimalSize = Math.min(widthBasedSize, heightBasedSize, 35); // 最大35px
+                // 基于可用宽度和高度计算最佳格子大小
+                const widthBasedSize = (viewportWidth - 40 - 2 * gridPadding - (cols - 1) * gap) / cols; // 考虑padding、间距
+                const heightBasedSize = (availableHeight - 2 * gridPadding - (rows - 1) * gap) / rows;
+                
+                const optimalSize = Math.floor(Math.min(widthBasedSize, heightBasedSize, 35)); // 最大35px
+                
+                // 设置游戏板尺寸
+                gameBoard.style.width = `${2 * gridPadding + cols * optimalSize + (cols - 1) * gap}px`;
+                gameBoard.style.height = `${2 * gridPadding + rows * optimalSize + (rows - 1) * gap}px`;
+                gameBoard.style.margin = '0 auto';
                 
                 // 设置格子大小
                 const cells = document.querySelectorAll('.cell');
                 cells.forEach(cell => {
+                    // 移除aspect-ratio以避免尺寸冲突
+                    cell.style.aspectRatio = 'auto';
                     cell.style.width = `${optimalSize}px`;
                     cell.style.height = `${optimalSize}px`;
                     cell.style.transition = 'transform 0.1s ease';
