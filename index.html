@@ -200,19 +200,19 @@
         }
         
         /* 不同游戏的颜色区分 */
-        .game-card:nth-child(1) .game-preview {
+        .game-card.tetris .game-preview {
             background: linear-gradient(135deg, #6366f1, #4f46e5);
         }
         
-        .game-card:nth-child(2) .game-preview {
+        .game-card.minesweeper .game-preview {
             background: linear-gradient(135deg, #ec4899, #db2777);
         }
         
-        .game-card:nth-child(3) .game-preview {
+        .game-card.snake .game-preview {
             background: linear-gradient(135deg, #10b981, #059669);
         }
         
-        .game-card:nth-child(4) .game-preview {
+        .game-card.breakout .game-preview {
             background: linear-gradient(135deg, #f59e0b, #d97706);
         }
         
@@ -606,7 +606,7 @@
             <!-- 游戏卡片网格 -->
             <div class="games-grid">
                 <!-- 俄罗斯方块游戏 -->
-                <div class="game-card animate-in">
+                <div class="game-card tetris animate-in">
                     <a href="tetris.html" class="game-link">
                         <div class="game-preview">
                             <div class="game-icon">◼◻</div>
@@ -624,7 +624,7 @@
                 </div>
                 
                 <!-- 扫雷游戏 -->
-                <div class="game-card animate-in">
+                <div class="game-card minesweeper animate-in">
                     <a href="minesweeper.html" class="game-link">
                         <div class="game-preview">
                             <div class="game-icon">💣</div>
@@ -642,7 +642,7 @@
                 </div>
                 
                 <!-- 贪吃蛇游戏 -->
-                <div class="game-card animate-in">
+                <div class="game-card snake animate-in">
                     <a href="snake.html" class="game-link">
                         <div class="game-preview">
                             <div class="game-icon">🐍</div>
@@ -660,20 +660,23 @@
                     </a>
                 </div>
                 
-                <!-- 待开发游戏 - 打砖块 -->
-                <div class="game-card animate-in">
-                    <div class="game-preview">
-                        <div class="game-icon">🎯</div>
-                    </div>
-                    <div class="game-info">
-                        <h3 class="game-title">打砖块</h3>
-                        <div>
-                            <span class="tag">动作</span>
-                            <span class="tag">挑战</span>
+                    <!-- 打砖块游戏 -->
+                <div class="game-card breakout animate-in">
+                    <a href="breakout.html" class="game-link">
+                        <div class="game-preview">
+                            <div class="game-icon">🎯</div>
                         </div>
-                        <p class="game-description">用小球击碎所有砖块，控制挡板接住小球，挑战更高难度的关卡。</p>
-                        <button class="play-button" disabled>开发中</button>
-                    </div>
+                        <div class="game-info">
+                            <h3 class="game-title">打砖块</h3>
+                            <div>
+                                <span class="tag">动作</span>
+                                <span class="tag">挑战</span>
+                                <span class="tag">已上线</span>
+                            </div>
+                            <p class="game-description">用小球击碎所有砖块，控制挡板接住小球，挑战更高难度的关卡，收集能量道具获得额外能力。</p>
+                            <button class="play-button">开始游戏</button>
+                        </div>
+                    </a>
                 </div>
             </div>
         </main>
