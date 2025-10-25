@@ -336,6 +336,13 @@
             color: white;
         }
         
+        .cell.question {
+            background-color: #f3f4f6;
+            color: var(--text-primary);
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
         .cell.mine-exploded {
             background-color: var(--danger-color);
             color: white;
@@ -916,10 +923,12 @@
         // 处理格子点击
         function handleCellClick(row, col) {
             if (gameState.gameOver || gameState.gameWon) return;
-            if (gameState.revealed[row][col] || gameState.flagged[row][col]) return;
+            
+            // 检查是否已揭示、标记为旗子或问号
+            const cellElement = getCellElement(row, col);
+            if (gameState.revealed[row][col] || cellElement.classList.contains('flagged') || cellElement.classList.contains('question')) return;
             
             // 添加点击视觉反馈
-            const cellElement = getCellElement(row, col);
             if (cellElement) {
                 cellElement.style.transform = 'scale(0.95)';
                 setTimeout(() => {
@@ -1103,7 +1112,11 @@
             
             // 边界检查
             if (row < 0 || row >= rows || col < 0 || col >= cols) return;
-            if (gameState.revealed[row][col] || gameState.flagged[row][col]) return;
+            if (gameState.revealed[row][col]) return;
+            
+            const cellElement = getCellElement(row, col);
+            // 检查是否标记为旗子（问号标记可以被揭示）
+            if (cellElement.classList.contains('flagged')) return;
             
             // 获取格子值
             const value = gameState.board[row][col];
@@ -1112,8 +1125,9 @@
             gameState.revealed[row][col] = true;
             
             // 更新DOM
-            const cellElement = getCellElement(row, col);
             if (cellElement) {
+                // 移除所有标记状态
+                cellElement.classList.remove('flagged', 'question');
                 cellElement.classList.add('revealed');
                 
                 // 更新单元格显示内容
@@ -1143,22 +1157,32 @@
             }
         }
         
-        // 切换标记
+        // 切换标记（支持旗子和问号状态）
         function toggleFlag(row, col) {
             const settings = DIFFICULTY_SETTINGS[gameState.difficulty];
-            
-            gameState.flagged[row][col] = !gameState.flagged[row][col];
-            
             const cellElement = getCellElement(row, col);
-            if (cellElement) {
-                if (gameState.flagged[row][col]) {
-                    cellElement.classList.add('flagged');
-                    cellElement.textContent = '🚩';
-                } else {
-                    cellElement.classList.remove('flagged');
-                    cellElement.textContent = '';
-                }
+            
+            // 获取当前单元格状态
+            const isFlagged = cellElement.classList.contains('flagged');
+            const isQuestion = cellElement.classList.contains('question');
+            
+            // 移除所有状态类和内容
+            cellElement.classList.remove('flagged', 'question');
+            cellElement.textContent = '';
+            
+            // 状态循环：普通 → 旗子 → 问号 → 普通
+            if (!isFlagged && !isQuestion) {
+                // 普通状态 → 旗子状态
+                cellElement.classList.add('flagged');
+                cellElement.textContent = '🚩';
+            } else if (isFlagged && !isQuestion) {
+                // 旗子状态 → 问号状态
+                cellElement.classList.add('question');
+                cellElement.textContent = '?';
             }
+            
+            // 更新游戏状态（只在旗子状态时更新flagged数组）
+            gameState.flagged[row][col] = cellElement.classList.contains('flagged');
             
             // 更新地雷计数器
             const flaggedCount = gameState.flagged.flat().filter(f => f).length;
@@ -1182,9 +1206,9 @@
             gameState.mines.forEach(({ row, col }) => {
                 const cellElement = getCellElement(row, col);
                 if (cellElement) {
+                    // 移除所有标记状态（包括问号）
+                    cellElement.classList.remove('flagged', 'question');
                     cellElement.classList.add('revealed');
-                    // 移除标记状态（如果有）并显示炸弹
-                    cellElement.classList.remove('flagged');
                     cellElement.textContent = '💣';
                     
                     if (row === explodedRow && col === explodedCol) {
@@ -1206,7 +1230,7 @@
                     if (gameState.flagged[row][col] && gameState.board[row][col] !== 'M') {
                         const cellElement = getCellElement(row, col);
                         if (cellElement) {
-                            cellElement.classList.remove('flagged');
+                            cellElement.classList.remove('flagged', 'question');
                             cellElement.classList.add('revealed', 'flag-error');
                             cellElement.textContent = '❌';
                             // 为错误标记添加红色背景
@@ -1271,13 +1295,13 @@
                 
                 // 自动标记剩余的地雷
                 gameState.mines.forEach(({ row, col }) => {
-                    if (!gameState.flagged[row][col]) {
+                    const cellElement = getCellElement(row, col);
+                    if (cellElement && (!gameState.flagged[row][col] || cellElement.classList.contains('question'))) {
                         gameState.flagged[row][col] = true;
-                        const cellElement = getCellElement(row, col);
-                        if (cellElement) {
-                            cellElement.classList.add('flagged');
-                            cellElement.textContent = '🚩';
-                        }
+                        // 移除所有标记状态（包括问号）
+                        cellElement.classList.remove('flagged', 'question');
+                        cellElement.classList.add('flagged');
+                        cellElement.textContent = '🚩';
                     }
                 });
                 
