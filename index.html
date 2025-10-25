@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
-    <title>Trae 游戏大厅</title>
+    <title>怀旧游戏大厅</title>
     <style>
         /* 全局变量 */
         :root {
@@ -164,7 +164,7 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            height: 350px;
+            height: 380px;
             box-shadow: 0 2px 8px var(--shadow-color);
             touch-action: manipulation; /* 防止双击缩放 */
             -webkit-tap-highlight-color: transparent; /* 移除iOS上的点击高亮 */
@@ -250,6 +250,13 @@
             line-height: 1.5;
             flex-grow: 1;
             margin-bottom: 16px;
+            min-height: 60px;
+            max-height: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
         }
         
         /* 开始游戏按钮 - Trae风格 */
@@ -574,7 +581,7 @@
         <!-- 顶部导航栏 -->
         <header class="header">
             <div class="logo-container">
-                <div class="logo">Trae 游戏大厅</div>
+                <div class="logo">怀旧 游戏大厅</div>
             </div>
             <nav class="nav-left">
                 <a href="#" class="nav-link active">首页</a>
@@ -592,7 +599,7 @@
         <main class="main-content">
             <!-- 页面标题 -->
             <div class="page-header">
-                <h1 class="page-title">探索 Trae 游戏世界</h1>
+                <h1 class="page-title">探索游戏世界</h1>
                 <p class="page-description">由 AI 驱动的现代游戏体验，简洁、流畅、高效。在这里，你可以享受经典游戏的全新玩法。</p>
             </div>
             
@@ -634,20 +641,23 @@
                     </a>
                 </div>
                 
-                <!-- 待开发游戏 - 贪吃蛇 -->
+                <!-- 贪吃蛇游戏 -->
                 <div class="game-card animate-in">
-                    <div class="game-preview">
-                        <div class="game-icon">🐍</div>
-                    </div>
-                    <div class="game-info">
-                        <h3 class="game-title">贪吃蛇</h3>
-                        <div>
-                            <span class="tag">休闲</span>
-                            <span class="tag">成长</span>
+                    <a href="snake.html" class="game-link">
+                        <div class="game-preview">
+                            <div class="game-icon">🐍</div>
                         </div>
-                        <p class="game-description">控制蛇吃食物，让它变得越来越长，但要小心不要撞到墙壁或自己的身体。</p>
-                        <button class="play-button" disabled>开发中</button>
-                    </div>
+                        <div class="game-info">
+                            <h3 class="game-title">贪吃蛇</h3>
+                            <div>
+                                <span class="tag">休闲</span>
+                                <span class="tag">成长</span>
+                                <span class="tag">已上线</span>
+                            </div>
+                            <p class="game-description">控制蛇吃食物，让它变得越来越长。支持键盘控制，按1加速、按2减速，享受经典贪吃蛇的全新体验！</p>
+                            <button class="play-button">开始游戏</button>
+                        </div>
+                    </a>
                 </div>
                 
                 <!-- 待开发游戏 - 打砖块 -->
@@ -671,7 +681,7 @@
         <!-- 页脚 -->
         <footer class="footer">
             <div class="footer-content">
-                <div class="footer-text">© 2024 Trae 游戏大厅 | 由 AI 驱动</div>
+                <div class="footer-text">© 2024 怀旧游戏大厅 | 由 AI 驱动</div>
                 <div class="footer-links">
                     <a href="#" class="footer-link">隐私政策</a>
                     <a href="#" class="footer-link">使用条款</a>
